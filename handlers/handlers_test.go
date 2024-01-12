@@ -12,94 +12,106 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHandler(t *testing.T) {
-	// определяем структуру теста
-	type want struct {
-		code     int
-		response string
-	}
+// определяем структуру теста
+type want struct {
+	code     int
+	response string
+}
 
-	type body struct {
-		link string
-	}
+type body struct {
+	link string
+}
 
-	// создаём массив тестов: имя и желаемый результат
-	tests := []struct {
-		name   string
-		want   want
-		url    string
-		method string
-		body   body
-	}{
-		// определяем все тесты
-		{
-			name: "positive test #1",
-			want: want{
-				code:     307,
-				response: ``,
-			},
-			url:    "/45ujzdf2",
-			method: http.MethodGet,
-			body:   body{},
+type testStruct struct {
+	name   string
+	want   want
+	url    string
+	method string
+	body   body
+}
+
+var dataTestGet = []testStruct{
+	{
+		name: "positive test get #1",
+		want: want{
+			code:     307,
+			response: ``,
 		},
-		{
-			name: "positive test #2",
-			want: want{
-				code:     201,
-				response: `jdrgjdfg`,
-			},
-			url:    "/",
-			method: http.MethodPost,
-			body: body{
-				link: "http:/esefs/api/request",
-			},
+		url:    "/45ujzdf2",
+		method: http.MethodGet,
+		body:   body{},
+	},
+	{
+		name: "negative test get #1",
+		want: want{
+			code:     400,
+			response: `Код не указан`,
 		},
-		{
-			name: "negative test #1",
-			want: want{
-				code:     400,
-				response: `URL не указан`,
-			},
-			url:    "/",
-			method: http.MethodPost,
-			body: body{
-				link: "",
-			},
+		url:    "/",
+		method: http.MethodGet,
+		body:   body{},
+	},
+	{
+		name: "negative test get #2",
+		want: want{
+			code:     404,
+			response: `Код не найден`,
 		},
-		{
-			name: "negative test #2",
-			want: want{
-				code:     400,
-				response: `Код не указан`,
-			},
-			url:    "/",
-			method: http.MethodGet,
-			body:   body{},
+		url:    "/awdawdsdd",
+		method: http.MethodGet,
+		body:   body{},
+	},
+}
+
+var dataTestPost = []testStruct{
+	{
+		name: "positive test post #1",
+		want: want{
+			code:     201,
+			response: `jdrgjdfg`,
 		},
-		{
-			name: "negative test #3",
-			want: want{
-				code:     404,
-				response: `Код не найден`,
-			},
-			url:    "/awdawdsdd",
-			method: http.MethodGet,
-			body:   body{},
+		url:    "/",
+		method: http.MethodPost,
+		body: body{
+			link: "http:/esefs/api/request",
 		},
-		{
-			name: "negative test #4",
-			want: want{
-				code:     500,
-				response: `Ошибка преобразования`,
-			},
-			url:    "/",
-			method: http.MethodPost,
-			body: body{
-				link: "daawdawda",
-			},
+	},
+	{
+		name: "negative test post #1",
+		want: want{
+			code:     400,
+			response: `URL не указан`,
 		},
-	}
-	for _, tt := range tests {
+		url:    "/",
+		method: http.MethodPost,
+		body: body{
+			link: "",
+		},
+	},
+	{
+		name: "negative test post #2",
+		want: want{
+			code:     500,
+			response: `Ошибка преобразования`,
+		},
+		url:    "/",
+		method: http.MethodPost,
+		body: body{
+			link: "daawdawda",
+		},
+	},
+}
+
+func TestGetHandler(t *testing.T) {
+	testHandler(t, dataTestGet)
+}
+
+func TestPostHandler(t *testing.T) {
+	testHandler(t, dataTestPost)
+}
+
+func testHandler(t *testing.T, data []testStruct) {
+	for _, tt := range data {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
 			data := url.Values{}
@@ -120,7 +132,11 @@ func TestHandler(t *testing.T) {
 
 func testRequest(t *testing.T, ts *httptest.Server, method string, path string, body io.Reader) (int, string) {
 	req, err := http.NewRequest(method, ts.URL+path, body)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if method == http.MethodPost {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
