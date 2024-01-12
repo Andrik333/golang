@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", handlers.GetHandler)
+	r := handlers.NewRouter()
 
-	err := http.ListenAndServe(":8282", nil)
+	err := http.ListenAndServe(":8282", r)
 
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

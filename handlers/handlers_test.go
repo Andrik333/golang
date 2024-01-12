@@ -7,9 +7,12 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestGetHandler(t *testing.T) {
+func TestHandler(t *testing.T) {
 	// определяем структуру теста
 	type want struct {
 		code     int
@@ -101,36 +104,32 @@ func TestGetHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			data := url.Values{}
 			if tt.method == http.MethodPost {
-				// используем тип url.Values из пакета net/url
-				// устанавливаем данные
 				data.Set("link", tt.body.link)
 			}
 
-			request := httptest.NewRequest(tt.method, tt.url, strings.NewReader(data.Encode()))
-			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			r := NewRouter()
+			ts := httptest.NewServer(r)
+			defer ts.Close()
 
-			// создаём новый Recorder
-			w := httptest.NewRecorder()
-			// определяем хендлер
-			h := http.HandlerFunc(GetHandler)
-			// запускаем сервер
-			h.ServeHTTP(w, request)
-			res := w.Result()
-
-			// проверяем код ответа
-			if res.StatusCode != tt.want.code {
-				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
-			}
-
-			// получаем и проверяем тело запроса
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(resBody) != tt.want.response {
-				t.Errorf("Expected body %s, got %s", tt.want.response, w.Body.String())
-			}
+			statusCode, body := testRequest(t, ts, tt.method, tt.url, strings.NewReader(data.Encode()))
+			assert.Equal(t, tt.want.code, statusCode)
+			assert.Equal(t, tt.want.response, body)
 		})
 	}
+}
+
+func testRequest(t *testing.T, ts *httptest.Server, method string, path string, body io.Reader) (int, string) {
+	req, err := http.NewRequest(method, ts.URL+path, body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	return resp.StatusCode, string(respBody)
 }
