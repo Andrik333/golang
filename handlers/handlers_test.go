@@ -73,7 +73,7 @@ var dataTestPost = []testStruct{
 		url:    "/",
 		method: http.MethodPost,
 		body: body{
-			link: "http:/esefs/api/request",
+			link: "https://www.google.com",
 		},
 	},
 	{
@@ -132,6 +132,11 @@ func testHandler(t *testing.T, data []testStruct) {
 
 func testRequest(t *testing.T, ts *httptest.Server, method string, path string, body io.Reader) (int, string) {
 	req, err := http.NewRequest(method, ts.URL+path, body)
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 
 	if method == http.MethodPost {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -139,7 +144,7 @@ func testRequest(t *testing.T, ts *httptest.Server, method string, path string, 
 
 	require.NoError(t, err)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 
 	respBody, err := io.ReadAll(resp.Body)

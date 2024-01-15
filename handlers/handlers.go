@@ -13,9 +13,9 @@ type ShortLink struct {
 }
 
 var arrLink = []ShortLink{
-	{"adwsegse", "http:/esefs/test"},
-	{"jdrgjdfg", "http:/esefs/api/request"},
-	{"45ujzdf2", "http:/esefs/knowledgebase"},
+	{"adwsegse", "https://ya.ru"},
+	{"jdrgjdfg", "https://www.google.com"},
+	{"45ujzdf2", "https://mail.ru"},
 }
 
 func NewRouter() chi.Router {
@@ -42,8 +42,7 @@ func GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	for _, value := range arrLink {
 		if value.code == code {
-			w.WriteHeader(307)
-			w.Header().Set("Location", value.link)
+			http.Redirect(w, r, value.link, 307)
 			return
 		}
 	}
